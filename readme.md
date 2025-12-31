@@ -176,6 +176,8 @@ Equivalent PDDL goal:
 Only conjunctions are supported in v1.
 More complex goal languages (e.g., OR, EXISTS) may be added later.
 
+Goal to support `box-at` in next version.
+
 ----------------------------------------------------------------------
 8. Minimal Example
 ----------------------------------------------------------------------
