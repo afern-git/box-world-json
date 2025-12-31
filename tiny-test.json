@@ -11,6 +11,7 @@
   "goal": {
     "on": [["B1", "L2"]],
     "box-at": [["B1", "L2"]],
-    "clear": ["B1"]
+    "clear": ["B1"],
+    "pddl": "(and (on B1 L2) (box-at B1 L2) (clear B1))"
   }
 }

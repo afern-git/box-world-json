@@ -3,9 +3,6 @@
 This document describes a JSON format for specifying box rearrangement planning
 problems, which are compiled into PDDL problem instances for the BOX-WORLD domain.
 
-The format is minimal by default, unambiguous, and forward-compatible with more
-complex goals.
-
 ----------------------------------------------------------------------
 1. Top-Level Structure
 ----------------------------------------------------------------------
@@ -157,26 +154,34 @@ If omitted, no stacking constraints are imposed.
 7. Goal Specification (v1)
 ----------------------------------------------------------------------
 
-Currently supported goal form: conjunction of `on` relations.
+## Goals
 
-Example:
-  "goal": {
-    "on": [
-      ["B2", "B3"],
-      ["B3", "L2"]
-    ]
-  }
+The goal specification defines the desired final configuration of the world.  
+In v1, goals are expressed as a **conjunction of simple predicates**, with an optional escape hatch for **verbatim PDDL formulas**.
 
-Equivalent PDDL goal:
-  (and
-    (on B2 B3)
-    (on B3 L2)
-  )
+### Supported structured goal predicates
 
-Only conjunctions are supported in v1.
-More complex goal languages (e.g., OR, EXISTS) may be added later.
+The following goal predicates are currently supported:
 
-Goal to support `box-at` in next version.
+- `on` — box on box or box on location  
+- `box-at` — box at a specific location  
+- `clear` — object (box or location) is clear  
+
+Formulas are required to be in PDDL format:
+- "pddl": "<formula>"
+
+All structured goal predicates are **implicitly conjoined** along with the verbatim formula if present.
+
+#### Example
+```json
+"goal": {
+  "on": [
+    ["B2", "B3"],
+    ["B3", "L2"]
+  ],
+  "clear": ["B2"],
+  "pddl": "(exists (?x - box) (and (clear ?x) (not (holding ?x))))"
+}
 
 ----------------------------------------------------------------------
 8. Minimal Example
@@ -196,13 +201,3 @@ Goal to support `box-at` in next version.
     "on": [["B1", "L2"]]
   }
 }
-
-----------------------------------------------------------------------
-9. Design Principles
-----------------------------------------------------------------------
-
-- Sparse by default
-- Top-to-bottom stack ordering aligned with `on`
-- Deterministic semantics
-- Planner-safe initial states
-- Forward-compatible with richer goal languages

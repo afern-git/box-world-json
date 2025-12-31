@@ -14,7 +14,8 @@ Key assumptions (v1):
     color = "black" | "white"
   which emits (black X) or (white X) in PDDL.
 - Goal (v1) supports conjunction of on-relations:
-    "goal": { "on": [ [top, bottom_or_location], ... ] }
+    "goal": { "on": [ [top, bottom_or_location], "box-at": [ [box, location], ... ], 
+                "clear": [box_or_location, ... ], "pddl": "<pddl_formula>" }
 
 The generator infers:
 - (on ...) relations from stacks
@@ -77,6 +78,7 @@ class ProblemSpec:
     goal_on: List[Tuple[str, str]]
     goal_at: List[Tuple[str, str]]
     goal_clear: List[str]
+    goal_pddl: str = ""  # a pddl formula filled in later
 
 def parse_named_objects(field: Any, kind: str) -> Tuple[List[str], Dict[str, Dict[str, Any]]]:
     """
@@ -240,6 +242,13 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
             raise ValueError(f'goal.clear box or location must be a box or location; got "{box_or_location}"')
         goal_clear.append(box_or_location)
 
+    goal_pddl_raw = goal.get("pddl", [])
+    if goal_pddl_raw is None:
+        goal_pddl_raw = ""
+    if not isinstance(goal_pddl_raw, str):
+        raise ValueError('goal.pddl must be a string')
+    goal_pddl = goal_pddl_raw
+
     spec = ProblemSpec(
         problem_name=problem_name,
         locations=locations,
@@ -252,7 +261,8 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
         forbidden_stack=forbidden_stack,
         goal_on=goal_on,
         goal_at=goal_at,
-        goal_clear=goal_clear
+        goal_clear=goal_clear,
+        goal_pddl=goal_pddl
     )
 
     validate_spec(spec)
@@ -358,6 +368,8 @@ def goal_formula(spec: ProblemSpec) -> str:
     atoms = [atom("on", top, support) for (top, support) in spec.goal_on]
     atoms.extend([atom("box-at", box, location) for (box, location) in spec.goal_at])
     atoms.extend([atom("clear", name) for name in spec.goal_clear])
+    if spec.goal_pddl:
+        atoms.append(spec.goal_pddl)
     return and_formula(atoms)
 
 
