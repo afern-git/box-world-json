@@ -1,0 +1,14 @@
+{
+  "problem_name": "tiny",
+  "locations": ["L1", "L2"],
+  "boxes": ["B1"],
+  "initial_state": {
+    "robot_at": "L1",
+    "stacks": {
+      "L1": ["B1"]
+    }
+  },
+  "goal": {
+    "on": [["B1", "L2"]]
+  }
+}
