@@ -76,6 +76,7 @@ class ProblemSpec:
     forbidden_stack: List[Tuple[str, str]]
     goal_on: List[Tuple[str, str]]
     goal_at: List[Tuple[str, str]]
+    goal_clear: List[str]
 
 def parse_named_objects(field: Any, kind: str) -> Tuple[List[str], Dict[str, Dict[str, Any]]]:
     """
@@ -188,10 +189,12 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
         forbidden_stack.append((top, bottom))
 
     # goal (v2): {"on": [[top, support], ...]
-    #             "box-at" : [[box, location], ...] }
+    #             "box-at" : [[box, location], ...] 
+    #             "clear": [box_or_location, ...] }
     goal = data["goal"]
     if not isinstance(goal, dict):
         raise ValueError('"goal" must be an object')
+
     goal_on_raw = goal.get("on", [])
     if goal_on_raw is None:
         goal_on_raw = []
@@ -224,6 +227,19 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
             raise ValueError(f'goal.box-at location must be a location; got "{location}"')
         goal_at.append((box, location))
 
+    goal_clear_raw = goal.get("clear", [])
+    if goal_clear_raw is None:
+        goal_clear_raw = []
+    if not isinstance(goal_clear_raw, list):
+        raise ValueError('goal.clear must be a list of boxes and locations')
+    goal_clear: List[str] = []
+    for box_or_location in goal_clear_raw:
+        if not isinstance(box_or_location, str):
+            raise ValueError('Each goal.clear entry must be a box or location name')
+        if box_or_location not in box_set and box_or_location not in loc_set:
+            raise ValueError(f'goal.clear box or location must be a box or location; got "{box_or_location}"')
+        goal_clear.append(box_or_location)
+
     spec = ProblemSpec(
         problem_name=problem_name,
         locations=locations,
@@ -236,6 +252,7 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
         forbidden_stack=forbidden_stack,
         goal_on=goal_on,
         goal_at=goal_at,
+        goal_clear=goal_clear
     )
 
     validate_spec(spec)
@@ -340,6 +357,7 @@ def init_facts(spec: ProblemSpec) -> List[str]:
 def goal_formula(spec: ProblemSpec) -> str:
     atoms = [atom("on", top, support) for (top, support) in spec.goal_on]
     atoms.extend([atom("box-at", box, location) for (box, location) in spec.goal_at])
+    atoms.extend([atom("clear", name) for name in spec.goal_clear])
     return and_formula(atoms)
 
 
