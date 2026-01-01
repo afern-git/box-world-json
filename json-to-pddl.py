@@ -403,200 +403,194 @@ def emit_pddl_problem(spec: ProblemSpec) -> str:
     lines.append(")")
     return "\n".join(lines)
 
-
-# -----------------------------
-# CLI
-# -----------------------------
-
-# def main() -> None:
-#     print("Starting main()\n")
-#     ap = argparse.ArgumentParser(
-#         description="Convert Box-World JSON (v1) to PDDL, and optionally run an external planner."
-#     )
-#     sub = ap.add_subparsers(dest="cmd", required=True)
-
-#     # -------------------------
-#     # convert subcommand
-#     # -------------------------
-#     ap_convert = sub.add_parser("convert", help="Convert JSON instance to a PDDL problem file.")
-#     ap_convert.add_argument("json_path", help="Path to the JSON instance file")
-#     ap_convert.add_argument("-o", "--out", help="Output .pddl path (default: stdout)")
-
-#     # -------------------------
-#     # solve subcommand
-#     # -------------------------
-#     ap_solve = sub.add_parser("solve", help="Generate PDDL problem and call an external planner; return best plan.")
-#     ap_solve.add_argument("json_path", help="Path to the JSON instance file")
-#     ap_solve.add_argument(
-#         "--domain",
-#         default="./box-world-domain.pddl",
-#         help="Path to the PDDL domain file (default: box-world-domain.pddl).",
-#     )
-#     ap_solve.add_argument(
-#         "--planner",
-#         default="./fast-downward-24.06.1/fast-downward.py",
-#         help="Path to the FastDownward planner executable (default: ./fast-downward-24.06.1/fast-downward.py).",
-#     )
-#     ap_solve.add_argument(
-#         "--planner-args",
-#         nargs=argparse.REMAINDER,
-#         default="--alias seq-sat-lama-2011",
-#         help="Extra arguments passed to the planner (everything after --planner-args).",
-#     )
-
-#     # How to tell the planner where to write plan files.
-#     # Default assumes planner supports: --plan-file <base>
-#     ap_solve.add_argument(
-#         "--planner-plan-flag",
-#         default="--plan-file",
-#         help='Planner flag used to set the plan output basename (default: "--plan-file").',
-#     )
-
-#     # Optional: keep the generated problem file (and plan files) for debugging
-#     ap_solve.add_argument(
-#         "--keep-tmp",
-#         action="store_true",
-#         help="Keep temporary directory with generated PDDL + planner outputs.",
-#     )
-#     ap_solve.add_argument(
-#         "--problem-out",
-#         default=None,
-#         help="Optional path to write the generated PDDL problem (in addition to running planner).",
-#     )
-
-#     # Final output for the best plan
-#     ap_solve.add_argument(
-#         "--plan-out",
-#         default=None,
-#         help="Write best plan to this path. If omitted, prints plan to stdout.",
-#     )
-
-#     args = ap.parse_args()
-
-#     print("I'm here\n")
-#     # -------------------------
-#     # convert mode
-#     # -------------------------
-#     if args.cmd == "convert":
-#         spec = load_ProblemSpec(args.json_path)
-#         pddl = emit_pddl_problem(spec)
-#         if args.out:
-#             with open(args.out, "w", encoding="utf-8") as f:
-#                 f.write(pddl + "\n")
-#         else:
-#             print(pddl)
-#         return
-
-#     # -------------------------
-#     # solve mode
-#     # -------------------------
-#     if args.cmd == "solve":
-#         # 1) Generate problem PDDL text
-#         spec = load_ProblemSpec(args.json_path)
-#         problem_pddl = emit_pddl_problem(spec)
-
-#         # 2) Use a temp dir unless keep-tmp is requested (then we still use temp dir but don't delete)
-#         tmp_ctx = tempfile.TemporaryDirectory()
-#         tmpdir = tmp_ctx.name
-
-#         try:
-#             # Write problem to temp file
-#             problem_path = os.path.join(tmpdir, f"{spec.problem_name}.pddl")
-#             with open(problem_path, "w", encoding="utf-8") as f:
-#                 f.write(problem_pddl + "\n")
-
-#             # Optionally also write problem to a user-specified path
-#             if args.problem_out:
-#                 with open(args.problem_out, "w", encoding="utf-8") as f:
-#                     f.write(problem_pddl + "\n")
-
-#             # Plan basename in temp dir (planner will create plan.1, plan.2, ...)
-#             plan_base = os.path.join(tmpdir, "plan")
-
-#             # 3) Build planner command
-#             cmd = [
-#                 args.planner,
-#                 args.planner_args,
-#                 args.planner_plan_flag,
-#                 plan_base,
-#                 args.domain,
-#                 problem_path,
-#             ] 
-
-#             # 4) Run planner
-#             res = subprocess.run(cmd, capture_output=True, text=True)
-#             if res.returncode != 0:
-#                 # Surface planner stderr/stdout for debugging
-#                 raise RuntimeError(
-#                     "Planner failed.\n"
-#                     f"Command: {' '.join(cmd)}\n\n"
-#                     f"STDOUT:\n{res.stdout}\n\n"
-#                     f"STDERR:\n{res.stderr}\n"
-#                 )
-
-#             # 5) Find best plan file plan.N with largest N
-#             plan_candidates = glob.glob(plan_base + ".*")
-#             best_path = None
-#             best_n = None
-
-#             for p in plan_candidates:
-#                 m = re.match(r".*\.(\d+)$", p)
-#                 if not m:
-#                     continue
-#                 n = int(m.group(1))
-#                 if best_n is None or n > best_n:
-#                     best_n = n
-#                     best_path = p
-
-#             if best_path is None:
-#                 raise RuntimeError(
-#                     "Planner succeeded but no plan files were found.\n"
-#                     f"Looked for files matching: {plan_base}.*\n"
-#                     f"STDOUT:\n{res.stdout}\n\n"
-#                     f"STDERR:\n{res.stderr}\n"
-#                 )
-
-#             # 6) Return best plan: write to file or print
-#             with open(best_path, "r", encoding="utf-8") as f:
-#                 best_plan_text = f.read()
-
-#             if args.plan_out:
-#                 # Ensure destination directory exists
-#                 out_dir = os.path.dirname(args.plan_out)
-#                 if out_dir:
-#                     os.makedirs(out_dir, exist_ok=True)
-#                 with open(args.plan_out, "w", encoding="utf-8") as f:
-#                     f.write(best_plan_text)
-#             else:
-#                 print(best_plan_text, end="" if best_plan_text.endswith("\n") else "\n")
-
-#             # If keeping tmp, tell user where it is (useful for debugging)
-#             if args.keep_tmp:
-#                 # Keep temp dir by preventing cleanup below
-#                 print(f"\n[kept tmp dir] {tmpdir}")
-#                 tmp_ctx.cleanup = lambda: None  # type: ignore
-
-#         finally:
-#             # Cleanup temp directory unless keep-tmp was requested and we disabled cleanup
-#             tmp_ctx.cleanup()
-#         return
-
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Convert Box-World JSON (v1) to a BOX-WORLD PDDL problem instance."
+        description="Convert Box-World JSON (v1) to PDDL, and optionally run an external planner."
     )
-    ap.add_argument("json_path", help="Path to the JSON instance file")
-    ap.add_argument("-o", "--out", help="Output .pddl path (default: stdout)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+
+    # -------------------------
+    # convert subcommand
+    # -------------------------
+    ap_convert = sub.add_parser("convert", help="Convert JSON instance to a PDDL problem file.")
+    ap_convert.add_argument("json_path", help="Path to the JSON instance file")
+    ap_convert.add_argument("-o", "--out", help="Output .pddl path (default: stdout)")
+
+    # -------------------------
+    # solve subcommand
+    # -------------------------
+    ap_solve = sub.add_parser("solve", help="Generate PDDL problem and call an external planner; return best plan.")
+    ap_solve.add_argument("json_path", help="Path to the JSON instance file")
+    ap_solve.add_argument(
+        "--domain",
+        default="./box-world-domain.pddl",
+        help="Path to the PDDL domain file (default: box-world-domain.pddl).",
+    )
+    ap_solve.add_argument(
+        "--planner",
+        default="./fast-downward-24.06.1/fast-downward.py",
+        help="Path to the FastDownward planner executable (default: ./fast-downward-24.06.1/fast-downward.py).",
+    )
+    ap_solve.add_argument(
+        "--planner-args",
+        nargs=argparse.REMAINDER,
+        default=["--alias", "seq-sat-lama-2011"],
+        help="Extra arguments passed to the planner (everything after --planner-args).",
+    )
+
+    # How to tell the planner where to write plan files.
+    # Default assumes planner supports: --plan-file <base>
+    ap_solve.add_argument(
+        "--planner-plan-flag",
+        default="--plan-file",
+        help='Planner flag used to set the plan output basename (default: "--plan-file").',
+    )
+
+    # Optional: keep the generated problem file (and plan files) for debugging
+    ap_solve.add_argument(
+        "--keep-tmp",
+        action="store_true",
+        help="Keep temporary directory with generated PDDL + planner outputs.",
+    )
+    ap_solve.add_argument(
+        "--problem-out",
+        default=None,
+        help="Optional path to write the generated PDDL problem (in addition to running planner).",
+    )
+
+    # Final output for the best plan
+    ap_solve.add_argument(
+        "--plan-out",
+        default=None,
+        help="Write best plan to this path. If omitted, prints plan to stdout.",
+    )
+
     args = ap.parse_args()
 
-    spec = load_ProblemSpec(args.json_path)
-    pddl = emit_pddl_problem(spec)
+    # -------------------------
+    # convert mode
+    # -------------------------
+    if args.cmd == "convert":
+        spec = load_ProblemSpec(args.json_path)
+        pddl = emit_pddl_problem(spec)
+        if args.out:
+            with open(args.out, "w", encoding="utf-8") as f:
+                f.write(pddl + "\n")
+        else:
+            print(pddl)
+        return
 
-    if args.out:
-        with open(args.out, "w", encoding="utf-8") as f:
-            f.write(pddl + "\n")
-    else:
-        print(pddl)
+    # -------------------------
+    # solve mode
+    # -------------------------
+    if args.cmd == "solve":
+        # 1) Generate problem PDDL text
+        spec = load_ProblemSpec(args.json_path)
+        problem_pddl = emit_pddl_problem(spec)
+
+        # 2) Use a temp dir unless keep-tmp is requested (then we still use temp dir but don't delete)
+        tmp_ctx = tempfile.TemporaryDirectory()
+        tmpdir = tmp_ctx.name
+
+        try:
+            # Write problem to temp file
+            problem_path = os.path.join(tmpdir, f"{spec.problem_name}.pddl")
+            with open(problem_path, "w", encoding="utf-8") as f:
+                f.write(problem_pddl + "\n")
+
+            # Optionally also write problem to a user-specified path
+            if args.problem_out:
+                with open(args.problem_out, "w", encoding="utf-8") as f:
+                    f.write(problem_pddl + "\n")
+
+            # Plan basename in temp dir (planner will create plan.1, plan.2, ...)
+            plan_base = os.path.join(tmpdir, "plan")
+
+            # 3) Build planner command
+            cmd = [args.planner]
+            cmd.extend(args.planner_args)
+            cmd.extend([
+                args.planner_plan_flag,
+                plan_base,
+                args.domain,
+                problem_path,
+            ])
+
+            # 4) Run planner
+            res = subprocess.run(cmd, capture_output=False, text=True)
+            if res.returncode != 0:
+                # Surface planner stderr/stdout for debugging
+                print("return code:", res.returncode)
+                raise RuntimeError(
+                    "Planner failed.\n"
+                    f"Command: {' '.join(cmd)}\n\n"
+                    f"STDOUT:\n{res.stdout}\n\n"
+                    f"STDERR:\n{res.stderr}\n"
+                )
+
+            # 5) Find best plan file plan.N with largest N
+            plan_candidates = glob.glob(plan_base + ".*")
+            best_path = None
+            best_n = None
+
+            for p in plan_candidates:
+                m = re.match(r".*\.(\d+)$", p)
+                if not m:
+                    continue
+                n = int(m.group(1))
+                if best_n is None or n > best_n:
+                    best_n = n
+                    best_path = p
+
+            if best_path is None:
+                raise RuntimeError(
+                    "Planner succeeded but no plan files were found.\n"
+                    f"Looked for files matching: {plan_base}.*\n"
+                    f"STDOUT:\n{res.stdout}\n\n"
+                    f"STDERR:\n{res.stderr}\n"
+                )
+
+            # 6) Return best plan: write to file or print
+            with open(best_path, "r", encoding="utf-8") as f:
+                best_plan_text = f.read()
+
+            if args.plan_out:
+                # Ensure destination directory exists
+                out_dir = os.path.dirname(args.plan_out)
+                if out_dir:
+                    os.makedirs(out_dir, exist_ok=True)
+                with open(args.plan_out, "w", encoding="utf-8") as f:
+                    f.write(best_plan_text)
+            else:
+                print(best_plan_text, end="" if best_plan_text.endswith("\n") else "\n")
+
+            # If keeping tmp, tell user where it is (useful for debugging)
+            if args.keep_tmp:
+                # Keep temp dir by preventing cleanup below
+                print(f"\n[kept tmp dir] {tmpdir}")
+                tmp_ctx.cleanup = lambda: None  # type: ignore
+
+        finally:
+            # Cleanup temp directory unless keep-tmp was requested and we disabled cleanup
+            tmp_ctx.cleanup()
+        return
+
+# def main() -> None:
+#     ap = argparse.ArgumentParser(
+#         description="Convert Box-World JSON (v1) to a BOX-WORLD PDDL problem instance."
+#     )
+#     ap.add_argument("json_path", help="Path to the JSON instance file")
+#     ap.add_argument("-o", "--out", help="Output .pddl path (default: stdout)")
+#     args = ap.parse_args()
+
+#     spec = load_ProblemSpec(args.json_path)
+#     pddl = emit_pddl_problem(spec)
+
+#     if args.out:
+#         with open(args.out, "w", encoding="utf-8") as f:
+#             f.write(pddl + "\n")
+#     else:
+#         print(pddl)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "problem_name": "tiny",
+  "problem_name": "tiny-test",
   "locations": ["L1", "L2"],
   "boxes": ["B1"],
   "initial_state": {
@@ -12,6 +12,6 @@
     "on": [["B1", "L2"]],
     "box-at": [["B1", "L2"]],
     "clear": ["B1"],
-    "pddl": "(and (on B1 L2) (box-at B1 L2) (clear B1))"
+    "pddl": ["(and (on B1 L2) (box-at B1 L2) (clear B1))"]
   }
 }

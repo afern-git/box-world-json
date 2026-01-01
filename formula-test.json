@@ -14,6 +14,6 @@
   },
   "goal": {
     "clear": ["B1", "B2"],
-;    "pddl": ["(hands-empty)", "(exists (?l1 ?l2 - location) (and (clear ?l2) (clear ?l1) (not (= ?l1 ?l2))))"]
+    "pddl": ["(robot-at L1)", "(hands-empty)", "(exists (?l1 ?l2 - location) (and (clear ?l2) (clear ?l1) (not (= ?l1 ?l2))))"]
   }
 }
