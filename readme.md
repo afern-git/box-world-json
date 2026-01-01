@@ -167,8 +167,8 @@ The following goal predicates are currently supported:
 - `box-at` — box at a specific location  
 - `clear` — object (box or location) is clear  
 
-Formulas are required to be in PDDL format:
-- "pddl": "<formula>"
+Formulas are lists of formulas specified in PDDL format -- these are interpreted as conjuctive:
+- "pddl": ["<formula>", "<formula>", ...]
 
 All structured goal predicates are **implicitly conjoined** along with the verbatim formula if present.
 
@@ -180,7 +180,7 @@ All structured goal predicates are **implicitly conjoined** along with the verba
     ["B3", "L2"]
   ],
   "clear": ["B2"],
-  "pddl": "(exists (?x - box) (and (clear ?x) (not (holding ?x))))"
+  "pddl": ["(robot-at L2)", "(exists (?x - box) (and (clear ?x) (not (holding ?x))))"]
 }
 
 ----------------------------------------------------------------------

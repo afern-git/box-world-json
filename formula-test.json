@@ -1,0 +1,19 @@
+{
+  "problem_name": "formula-test",
+  "locations": ["L1", "L2", "L3", "L4"],
+  "boxes": ["B1", "B2", "B3", "B4"],
+  "forbidden_stack": [
+    ["B2", "B1"], ["B3", "B1"],
+    ["B3", "B2"]
+  ],
+  "initial_state": {
+    "robot_at": "L4",
+    "stacks": {
+      "L1": ["B1"], "L2": ["B2"], "L3": ["B3"], "L4": ["B4"]
+    }
+  },
+  "goal": {
+    "clear": ["B1", "B2"],
+;    "pddl": ["(hands-empty)", "(exists (?l1 ?l2 - location) (and (clear ?l2) (clear ?l1) (not (= ?l1 ?l2))))"]
+  }
+}
