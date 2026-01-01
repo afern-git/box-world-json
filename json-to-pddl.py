@@ -401,6 +401,30 @@ def emit_pddl_problem(spec: ProblemSpec) -> str:
     lines.append(")")
     return "\n".join(lines)
 
+def parse_action_atom(line: str) -> Dict[str, List[str]]:
+    """
+    Convert a PDDL action atom like:
+        "(unstack b1 l1)"
+    into:
+        {"unstack": ["b1", "l1"]}
+    """
+    line = line.strip()
+
+    if not (line.startswith("(") and line.endswith(")")):
+        raise ValueError(f"Not a valid PDDL atom: {line}")
+
+    # Remove outer parentheses
+    inner = line[1:-1].strip()
+
+    if not inner:
+        raise ValueError(f"Empty PDDL atom: {line}")
+
+    tokens = inner.split()
+    action = tokens[0]
+    args = tokens[1:]
+
+    return {action: args}
+
 def parse_fd_plan_text(plan_text: str) -> Tuple[List[str], Optional[int]]:
     """
     Parse a Fast Downward plan file content.
@@ -427,7 +451,7 @@ def parse_fd_plan_text(plan_text: str) -> Tuple[List[str], Optional[int]]:
 
         # action lines
         if line.startswith("(") and line.endswith(")"):
-            steps.append(line)
+            steps.append(parse_action_atom(line))
         else:
             # If your planner outputs non-parenthesized actions, you can decide:
             # steps.append(line)

@@ -10,12 +10,12 @@ The tool supports two modes:
 - **solve** — JSON → PDDL → planner → **JSON plan output**
 
 ----------------------------------------------------------------------
-## Quick Start
+## Quick Start (assumes Fast Doward installation)
 ----------------------------------------------------------------------
 
 ```bash
-./json-to-pddl.py convert example.json -o problem.pddl
-./json-to-pddl.py solve example.json --plan-out plan.json
+./json-to-pddl.py convert tiny-test.json -o tiny-test.pddl
+./json-to-pddl.py solve tiny-test.json --plan-json-out tiny-test.plan.json
 
 ----------------------------------------------------------------------
 ## Dependencies and Installation (Fast Downward)
@@ -92,7 +92,7 @@ You can override the planner path explicitly:
 ```bash
 ./json-to-pddl.py solve problem.json \
   --planner /path/to/fast-downward.py \
-  --plan-out plan.json
+  --plan-json-out plan.json
 ```
 
 ----------------------------------------------------------------------
@@ -315,7 +315,7 @@ Goals describe the desired final configuration of the world.
 
 Supported structured predicates:
 - `on` — box on box or box on location
-- `box-at` — box at a location
+- `box-at` — box is in a stack at a location
 - `clear` — object (box or location) is clear
 
 All structured goal predicates are **implicitly conjoined**.
@@ -370,9 +370,13 @@ When run in **solve** mode, the tool outputs a **JSON plan file**.
 ```json
 {
   "plan": [
-    "(move l1 l2)",
-    "(pickup b1 l2)",
-    "(stack b1 b2 l2)"
+    {"unstack": ["b1", "b2", "l1"]},
+    {"locomotion": ["l1", "l2"]},
+    {"putdown": ["b1", "l2"]},
+    {"locomotion": ["l2", "l1"]},
+    {"pickup": ["b2", "l1"]},
+    {"locomotion": ["l1", "l2"]},
+    {"stack": ["b2", "b1", "l2"]}
   ],
   "cost": 12
 }
@@ -382,7 +386,14 @@ Fields:
 - `plan`: ordered list of action strings (as produced by the planner)
 - `cost`: integer plan cost, or `null` if unavailable
 
-If `--plan-out` is not specified, this JSON object is printed to stdout.
+Plan Actions:
+- `{"locomotion": ["l1", "l2"]}`: robot moves from location l1 to location l2
+- `{"pickup": ["b2", "l1"]}`: pickup box b that is directly on location l
+- `{"putdown": ["b1", "l2"]}`: putdown box b (currently held) directly onto location l (currently clear)
+- `{"unstack": ["b1", "b2", "l1"]}`: unstack box b1 that is currently on box b2 at location l (b2 may be on l or another box)
+- `{"stack": ["b2", "b1", "l2"]}`: stack box b1 (currently held) onto box b2 (currently clear) at location l (b2 may be on l or another box)
+
+If `--plan-json-out` is not specified, this JSON object is printed to stdout.
 
 ----------------------------------------------------------------------
 ## Minimal Example
