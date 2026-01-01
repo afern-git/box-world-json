@@ -34,10 +34,8 @@ import shutil
 import tempfile
 import subprocess
 
-
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple, Optional, Set, Union
-
 
 # -----------------------------
 # Utilities
@@ -403,6 +401,41 @@ def emit_pddl_problem(spec: ProblemSpec) -> str:
     lines.append(")")
     return "\n".join(lines)
 
+def parse_fd_plan_text(plan_text: str) -> Tuple[List[str], Optional[int]]:
+    """
+    Parse a Fast Downward plan file content.
+    Returns (steps, cost). Cost may be None if not found.
+    """
+    steps: List[str] = []
+    cost: Optional[int] = None
+
+    # Typical FD plan lines:
+    # (move b1 l1 l2)
+    # (pickup b1 l2)
+    # ; cost = 12 (unit cost)
+    for raw in plan_text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+
+        # comment lines
+        if line.startswith(";"):
+            m = re.search(r"cost\s*=\s*([0-9]+)", line)
+            if m:
+                cost = int(m.group(1))
+            continue
+
+        # action lines
+        if line.startswith("(") and line.endswith(")"):
+            steps.append(line)
+        else:
+            # If your planner outputs non-parenthesized actions, you can decide:
+            # steps.append(line)
+            # For now, ignore unexpected lines.
+            pass
+
+    return steps, cost
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="Convert Box-World JSON (v1) to PDDL, and optionally run an external planner."
@@ -460,9 +493,9 @@ def main() -> None:
 
     # Final output for the best plan
     ap_solve.add_argument(
-        "--plan-out",
+        "--plan-json-out",
         default=None,
-        help="Write best plan to this path. If omitted, prints plan to stdout.",
+        help="Write best plan in json format to this path. If omitted, prints plan to stdout.",
     )
 
     args = ap.parse_args()
@@ -554,15 +587,24 @@ def main() -> None:
             with open(best_path, "r", encoding="utf-8") as f:
                 best_plan_text = f.read()
 
-            if args.plan_out:
+            steps, cost = parse_fd_plan_text(best_plan_text)
+
+            plan_json_obj = {
+                "plan": steps,
+                "cost": cost,
+            }
+
+            plan_json_str = json.dumps(plan_json_obj, indent=2)
+
+            if args.plan_json_out:
                 # Ensure destination directory exists
-                out_dir = os.path.dirname(args.plan_out)
+                out_dir = os.path.dirname(args.plan_json_out)
                 if out_dir:
                     os.makedirs(out_dir, exist_ok=True)
-                with open(args.plan_out, "w", encoding="utf-8") as f:
-                    f.write(best_plan_text)
+                with open(args.plan_json_out, "w", encoding="utf-8") as f:
+                    f.write(plan_json_str + "\n")
             else:
-                print(best_plan_text, end="" if best_plan_text.endswith("\n") else "\n")
+                print(plan_json_str)
 
             # If keeping tmp, tell user where it is (useful for debugging)
             if args.keep_tmp:
