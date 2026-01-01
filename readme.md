@@ -14,8 +14,8 @@ The tool supports two modes:
 ----------------------------------------------------------------------
 
 ```bash
-./json-to-pddl.py convert tiny-test.json -o tiny-test.pddl
-./json-to-pddl.py solve tiny-test.json --plan-json-out tiny-test.plan.json
+./json-to-pddl.py convert ./examples/tiny-test.json -o tiny-test.pddl
+./json-to-pddl.py solve ./examples/tiny-test.json --plan-json-out tiny-test.plan.json
 
 ----------------------------------------------------------------------
 ## Dependencies and Installation (Fast Downward)
