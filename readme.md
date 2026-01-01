@@ -10,7 +10,103 @@ The tool supports two modes:
 - **solve** — JSON → PDDL → planner → **JSON plan output**
 
 ----------------------------------------------------------------------
-## 1. Command-Line Usage
+## Quick Start
+----------------------------------------------------------------------
+
+```bash
+./json-to-pddl.py convert example.json -o problem.pddl
+./json-to-pddl.py solve example.json --plan-out plan.json
+
+----------------------------------------------------------------------
+## Dependencies and Installation (Fast Downward)
+----------------------------------------------------------------------
+
+The `solve` mode of this tool requires an external PDDL planner.
+It has been tested with **Fast Downward 24.06.1**.
+
+Fast Downward is **not included** in this repository and must be installed separately.
+
+----------------------------------------------------------------------
+## Installing Fast Downward (Tarball Method)
+----------------------------------------------------------------------
+
+### 1. Download the Fast Downward tarball
+
+Download the latest Fast Downward release tarball from:
+
+https://www.fast-downward.org/latest/releases/
+
+For example:
+
+```bash
+wget https://www.fast-downward.org/latest/files/release24.06/fast-downward-24.06.1.tar.gz
+```
+
+---
+
+### 2. Extract the tarball
+
+```bash
+tar -xzf fast-downward-24.06.1.tar.gz
+cd fast-downward-24.06.1
+```
+
+This will create a directory containing the Fast Downward source code.
+
+---
+
+### 3. Build Fast Downward
+
+```bash
+python3 build.py
+```
+
+This compiles Fast Downward and creates the launcher script:
+
+```
+fast-downward.py
+```
+
+---
+
+### 4. Verify the installation
+
+```bash
+./fast-downward.py --help
+```
+
+You should see the Fast Downward help message.
+
+---
+
+### 5. Using Fast Downward with this tool
+
+By default, the solver assumes the planner is available at:
+
+```
+././fast-downward-24.06.1/fast-downward.py
+```
+
+You can override the planner path explicitly:
+
+```bash
+./json-to-pddl.py solve problem.json \
+  --planner /path/to/fast-downward.py \
+  --plan-out plan.json
+```
+
+----------------------------------------------------------------------
+## Tested Configuration
+----------------------------------------------------------------------
+
+- Fast Downward 24.06.1
+- Python 3.9+
+- Linux / WSL environments
+
+
+
+----------------------------------------------------------------------
+## Command-Line Usage
 ----------------------------------------------------------------------
 
 ### Convert JSON to PDDL
@@ -44,7 +140,7 @@ Larger numeric suffixes correspond to better plans.
 The tool automatically selects the **best plan**.
 
 ----------------------------------------------------------------------
-## 2. JSON Input Format
+## JSON Input Format
 ----------------------------------------------------------------------
 
 ### 2.1 Top-Level Structure
@@ -71,7 +167,7 @@ Optional fields:
 - `forbidden_stack`
 
 ----------------------------------------------------------------------
-## 3. Locations
+## Locations
 ----------------------------------------------------------------------
 
 Locations may be specified in either **minimal** or **property-annotated** form.
@@ -100,7 +196,7 @@ These map to PDDL predicates:
 Unknown properties are ignored by the generator.
 
 ----------------------------------------------------------------------
-## 4. Boxes
+## Boxes
 ----------------------------------------------------------------------
 
 Boxes follow the same structure and semantics as locations.
@@ -169,7 +265,7 @@ L1   (location)
 Locations omitted from `stacks` are assumed empty.
 
 ----------------------------------------------------------------------
-## 6. Initial State Semantics
+## Initial State Semantics
 ----------------------------------------------------------------------
 
 For a stack at location `L` with boxes `[t0, t1, ..., tk]` (top → bottom), the
@@ -192,7 +288,7 @@ Invariant:
 Each box must appear **exactly once** across `{holding} ∪ stacks`.
 
 ----------------------------------------------------------------------
-## 7. Forbidden Stacking (Optional)
+## Forbidden Stacking (Optional)
 ----------------------------------------------------------------------
 
 ```json
@@ -210,12 +306,12 @@ Each pair `[top, bottom]` generates:
 If omitted, no stacking constraints are imposed.
 
 ----------------------------------------------------------------------
-## 8. Goal Specification (v1)
+## Goal Specification (v1)
 ----------------------------------------------------------------------
 
 Goals describe the desired final configuration of the world.
 
-### 8.1 Structured Goal Predicates
+### Structured Goal Predicates
 
 Supported structured predicates:
 - `on` — box on box or box on location
@@ -246,7 +342,7 @@ Equivalent PDDL goal:
 
 ---
 
-### 8.2 Verbatim PDDL Goal Formulas
+### Verbatim PDDL Goal Formulas
 
 Advanced users may include raw PDDL formulas using the `pddl` field.
 
@@ -265,7 +361,7 @@ Notes:
 - Verbatim PDDL is not parsed or validated by the tool
 
 ----------------------------------------------------------------------
-## 9. JSON Output Format (Solve Mode)
+## JSON Output Format (Solve Mode)
 ----------------------------------------------------------------------
 
 When run in **solve** mode, the tool outputs a **JSON plan file**.
@@ -289,7 +385,7 @@ Fields:
 If `--plan-out` is not specified, this JSON object is printed to stdout.
 
 ----------------------------------------------------------------------
-## 10. Minimal Example
+## Minimal Example
 ----------------------------------------------------------------------
 
 ```json
@@ -310,7 +406,7 @@ If `--plan-out` is not specified, this JSON object is printed to stdout.
 ```
 
 ----------------------------------------------------------------------
-## 11. Version Notes
+## Version Notes
 ----------------------------------------------------------------------
 
 - This document describes **v1** of the Box-World JSON format.
