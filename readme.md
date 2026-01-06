@@ -7,7 +7,7 @@ in a structured **JSON format**, compiling them into **PDDL problem instances** 
 
 The tool supports two modes:
 - **convert** — JSON → PDDL problem file
-- **solve** — JSON → PDDL → planner → **JSON plan output**
+- **solve** — JSON → PDDL → planner → **JSONls plan output**
 
 ----------------------------------------------------------------------
 ## Quick Start (assumes Fast Doward installation)
@@ -84,7 +84,7 @@ You should see the Fast Downward help message.
 By default, the solver assumes the planner is available at:
 
 ```
-././fast-downward-24.06.1/fast-downward.py
+./fast-downward-24.06.1/fast-downward.py
 ```
 
 You can override the planner path explicitly:
