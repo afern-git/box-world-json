@@ -37,6 +37,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple, Optional, Set, Union
 
+from pddl_formula import PDDLFormulaError, validate_goal_formula
+
 # -----------------------------
 # Utilities
 # -----------------------------
@@ -84,7 +86,7 @@ class ProblemSpec:
     goal_on: List[Tuple[str, str]]
     goal_at: List[Tuple[str, str]]
     goal_clear: List[str]
-    goal_pddl: str = ""  # a pddl formula filled in later
+    goal_pddl: List[str]
 
 def parse_named_objects(field: Any, kind: str) -> Tuple[List[str], Dict[str, Dict[str, Any]]]:
     """
@@ -253,8 +255,16 @@ def load_ProblemSpec(path: str) -> ProblemSpec:
     if goal_pddl_raw is None:
         goal_pddl_raw = []
     if not isinstance(goal_pddl_raw, list):
-        raise ValueError('goal.pddl must be a list of strings, ech a PDDL formula')
-    goal_pddl = goal_pddl_raw
+        raise ValueError('goal.pddl must be a list of strings, each a PDDL formula')
+    goal_pddl: List[str] = []
+    for i, formula in enumerate(goal_pddl_raw):
+        if not isinstance(formula, str):
+            raise ValueError(f'goal.pddl[{i}] must be a string')
+        try:
+            validate_goal_formula(formula, boxes=box_set, locations=loc_set)
+        except PDDLFormulaError as exc:
+            raise ValueError(f"Invalid goal.pddl[{i}]: {exc}") from exc
+        goal_pddl.append(formula)
 
     spec = ProblemSpec(
         problem_name=problem_name,

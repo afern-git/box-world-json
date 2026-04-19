@@ -7,15 +7,16 @@ in a structured **JSON format**, compiling them into **PDDL problem instances** 
 
 The tool supports two modes:
 - **convert** — JSON → PDDL problem file
-- **solve** — JSON → PDDL → planner → **JSONls plan output**
+- **solve** — JSON → PDDL → planner → **JSON plan output**
 
 ----------------------------------------------------------------------
-## Quick Start (assumes Fast Doward installation)
+## Quick Start (assumes Fast Downward installation)
 ----------------------------------------------------------------------
 
 ```bash
 ./json-to-pddl.py convert ./examples/tiny-test.json -o tiny-test.pddl
 ./json-to-pddl.py solve ./examples/tiny-test.json --plan-json-out tiny-test.plan.json
+```
 
 ----------------------------------------------------------------------
 ## Dependencies and Installation (Fast Downward)
@@ -358,7 +359,25 @@ Advanced users may include raw PDDL formulas using the `pddl` field.
 Notes:
 - Each formula must be a **string**
 - All formulas are conjoined with structured goals
-- Verbatim PDDL is not parsed or validated by the tool
+- Verbatim formulas are parsed and validated before PDDL is emitted
+
+Supported formula forms:
+- Predicate atoms using `holding`, `hands-empty`, `robot-at`, `box-at`, `forbidden-stack`, `on`, `clear`, `black`, or `white`
+- Logical forms: `and`, `or`, `not`
+- Quantifiers: `exists` and `forall` with typed variables
+- Equality: `=`
+
+Validation rules:
+- Constants must refer to declared boxes or locations.
+- Variables must be bound by an enclosing `exists` or `forall`.
+- Predicate arity and argument types must match the `BOX-WORLD` domain.
+- Supported types are `box`, `location`, and `object`.
+- Full PDDL declarations, actions, effects, numeric expressions, and durative constructs are not supported in `goal.pddl`.
+
+Example validation error:
+```text
+Invalid goal.pddl[0]: predicate 'robot-at' expects location, got box term 'B1'
+```
 
 ----------------------------------------------------------------------
 ## JSON Output Format (Solve Mode)
